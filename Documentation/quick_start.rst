@@ -1,5 +1,5 @@
 ######################
-Quick Start with HTS Reconciliation
+Quick Start with HTS 
 ######################
 
 Description su quickstart
