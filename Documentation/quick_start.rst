@@ -1,15 +1,13 @@
 ######################
-Quick Start with MAPIE
+Quick Start with HTS Reconciliation
 ######################
 
-This package allows you to easily estimate prediction intervals using your
-favourite sklearn-compatible regressor on single-output data.
+Description su quickstart
 
-Estimate your prediction intervals
+Mon titre numéro 1
 ==================================
 
-The effective coverage is the actual fraction of true labels lying in the prediction intervals.
-==============================================
+Mon titre numéro 2==============================================
 
 .. toctree::
    :maxdepth: 2
