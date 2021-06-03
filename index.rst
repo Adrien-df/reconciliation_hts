@@ -3,6 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
+
+.. automodule:: how_to_opensource
+   :members:
+
+.. toctree::
+  :maxdepth: 2
+
+  auto_examples/index
+
 Welcome to reconciliation_hts's documentation !
 
 La je fais un essai et je vais à la ligne.

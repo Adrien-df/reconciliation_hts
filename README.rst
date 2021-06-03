@@ -1,38 +1,3 @@
-.. -*- mode: rst -*-
-
-|Travis|_ |AppVeyor|_ |Codecov|_ |CircleCI|_ |ReadTheDocs|_ |License|_ |PythonVersion|_ |PyPi|_
-
-.. |Travis| image:: https://travis-ci.com/simai-ml/MAPIE.svg?branch=master
-.. _Travis: https://travis-ci.com/simai-ml/MAPIE
-
-.. |AppVeyor| image:: https://ci.appveyor.com/api/projects/status/js4d7km6ckr801nj/branch/master?svg=true
-.. _AppVeyor: https://ci.appveyor.com/project/gmartinonQM/mapie
-
-.. |Codecov| image:: https://codecov.io/gh/simai-ml/MAPIE/branch/master/graph/badge.svg?token=F2S6KYH4V1
-.. _Codecov: https://codecov.io/gh/simai-ml/MAPIE
-
-.. |CircleCI| image:: https://circleci.com/gh/simai-ml/MAPIE.svg?style=shield&circle-token=:circle-token
-.. _CircleCI: https://circleci.com/gh/simai-ml/MAPIE
-
-.. |ReadTheDocs| image:: https://readthedocs.org/projects/mapie/badge
-.. _ReadTheDocs: https://mapie.readthedocs.io/en/latest
-
-.. |License| image:: https://img.shields.io/github/license/simai-ml/MAPIE
-.. _License: https://github.com/simai-ml/MAPIE/blob/master/LICENSE
-
-.. |PythonVersion| image:: https://img.shields.io/pypi/pyversions/mapie
-.. _PythonVersion: https://pypi.org/project/mapie/
-
-.. |PyPi| image:: https://img.shields.io/pypi/v/mapie
-.. _PyPi: https://pypi.org/project/mapie/
-
-
-.. image:: https://github.com/simai-ml/MAPIE/raw/master/doc/images/mapie_logo_nobg_cut.png
-    :width: 400
-    :align: center
-
-
-
 MAPIE - Model Agnostic Prediction Interval Estimator
 ====================================================
 
