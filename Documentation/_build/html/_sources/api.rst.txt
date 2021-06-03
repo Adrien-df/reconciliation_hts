@@ -1,16 +1,16 @@
 #########
-MAPIE API
+HTS API
 #########
 
 .. currentmodule:: reconciliation_hts
 
-Estimators
+Reconcile class
 ==========
 
 .. autosummary::
    :toctree: generated/
    :template: class.rst
 
-   Core.reconciliation.MapieRegressor
+   Core.reconciliation.To_Reconcile
 
 
