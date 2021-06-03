@@ -4,16 +4,20 @@
    contain the root `toctree` directive.
 
 .. toctree::
-  :maxdepth: 2
-
-  auto_examples/index
-
-.. toctree::
    :maxdepth: 2
    :hidden:
    :caption: Getting Started
 
    quick_start
+
+.. toctree::
+   :maxdepth: 2
+   :hidden:
+   :caption: Documentation
+
+   theoretical_description
+   tutorial
+   api
 
 
 Welcome to reconciliation_hts's documentation !

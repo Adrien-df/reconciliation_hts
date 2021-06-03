@@ -72,3 +72,22 @@ class To_Reconcile:
         self.summing_mat = summing_mat,
         self.in_sample_error_matrix = in_sample_error_matrix,
         self.base_forecasts = base_forecasts
+
+    def ma_fonction_lezardo(a:[int], b:[ArrayLike])-> double :
+        """[summary]
+
+        [extended_summary]
+
+        Parameters
+        ----------
+        a : [type]
+            [description]
+        b : [type]
+            [description]
+
+        Returns
+        -------
+        double
+            [description]
+        """
+        return (a+b)

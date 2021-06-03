@@ -5,7 +5,7 @@
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Quick Start with MAPIE &#8212; reconciliation_hts  documentation</title>
+    <title>&lt;no title&gt; &#8212; reconciliation_hts  documentation</title>
     <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
     <link rel="stylesheet" href="_static/alabaster.css" type="text/css" />
     <script id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
@@ -14,6 +14,7 @@
     <script src="_static/doctools.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Quick Start with MAPIE" href="quick_start.html" />
    
   <link rel="stylesheet" href="_static/custom.css" type="text/css" />
   
@@ -32,99 +33,10 @@
             
   <div class="toctree-wrapper compound">
 </div>
-<p>Welcome to reconciliation_hts’s documentation !</p>
-<p>La je fais un essai et je vais à la ligne.</p>
-<div class="section" id="quick-start-with-mapie">
-<h1>Quick Start with MAPIE<a class="headerlink" href="#quick-start-with-mapie" title="Permalink to this headline">¶</a></h1>
-<p>This package allows you to easily estimate prediction intervals using your
-favourite sklearn-compatible regressor on single-output data.</p>
-<div class="section" id="estimate-your-prediction-intervals">
-<h2>Estimate your prediction intervals<a class="headerlink" href="#estimate-your-prediction-intervals" title="Permalink to this headline">¶</a></h2>
-<div class="section" id="download-and-install-the-module">
-<h3>1. Download and install the module<a class="headerlink" href="#download-and-install-the-module" title="Permalink to this headline">¶</a></h3>
-<p>Install via <code class="docutils literal notranslate"><span class="pre">pip</span></code>:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">mapie</span>
-</pre></div>
-</div>
-<p>To install directly from the github repository :</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">pip</span> <span class="n">install</span> <span class="n">git</span><span class="o">+</span><span class="n">https</span><span class="p">:</span><span class="o">//</span><span class="n">github</span><span class="o">.</span><span class="n">com</span><span class="o">/</span><span class="n">simai</span><span class="o">-</span><span class="n">ml</span><span class="o">/</span><span class="n">MAPIE</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="run-mapieregressor">
-<h3>2. Run MapieRegressor<a class="headerlink" href="#run-mapieregressor" title="Permalink to this headline">¶</a></h3>
-<p>Let us start with a basic regression problem.
-Here, we generate one-dimensional noisy data with normal distribution
-that we fit with a linear model.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
-<span class="kn">from</span> <span class="nn">sklearn.linear_model</span> <span class="kn">import</span> <span class="n">LinearRegression</span>
-<span class="kn">from</span> <span class="nn">sklearn.datasets</span> <span class="kn">import</span> <span class="n">make_regression</span>
-
-<span class="n">regressor</span> <span class="o">=</span> <span class="n">LinearRegression</span><span class="p">()</span>
-<span class="n">X</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">make_regression</span><span class="p">(</span><span class="n">n_samples</span><span class="o">=</span><span class="mi">500</span><span class="p">,</span> <span class="n">n_features</span><span class="o">=</span><span class="mi">1</span><span class="p">,</span> <span class="n">noise</span><span class="o">=</span><span class="mi">20</span><span class="p">,</span> <span class="n">random_state</span><span class="o">=</span><span class="mi">59</span><span class="p">)</span>
-</pre></div>
-</div>
-<p>Since MAPIE is compliant with the standard scikit-learn API, we follow the standard
-sequential <code class="docutils literal notranslate"><span class="pre">fit</span></code> and <code class="docutils literal notranslate"><span class="pre">predict</span></code> process  like any scikit-learn regressor.
-We set two values for alpha to estimate prediction intervals at approximately one
-and two standard deviations from the mean.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">mapie.estimators</span> <span class="kn">import</span> <span class="n">MapieRegressor</span>
-<span class="n">alpha</span> <span class="o">=</span> <span class="p">[</span><span class="mf">0.05</span><span class="p">,</span> <span class="mf">0.32</span><span class="p">]</span>
-<span class="n">mapie</span> <span class="o">=</span> <span class="n">MapieRegressor</span><span class="p">(</span><span class="n">regressor</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="n">alpha</span><span class="p">)</span>
-<span class="n">mapie</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
-<span class="n">y_preds</span> <span class="o">=</span> <span class="n">mapie</span><span class="o">.</span><span class="n">predict</span><span class="p">(</span><span class="n">X</span><span class="p">)</span>
-</pre></div>
-</div>
-</div>
-<div class="section" id="show-the-results">
-<h3>3. Show the results<a class="headerlink" href="#show-the-results" title="Permalink to this headline">¶</a></h3>
-<p>MAPIE returns a <code class="docutils literal notranslate"><span class="pre">np.ndarray</span></code> of shape (n_samples, 3, len(alpha)) giving the predictions,
-as well as the lower and upper bounds of the prediction intervals for the target quantile
-for each desired alpha value.
-The estimated prediction intervals can then be plotted as follows.</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">from</span> <span class="nn">matplotlib</span> <span class="kn">import</span> <span class="n">pyplot</span> <span class="k">as</span> <span class="n">plt</span>
-<span class="kn">from</span> <span class="nn">mapie.metrics</span> <span class="kn">import</span> <span class="n">coverage_score</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">xlabel</span><span class="p">(</span><span class="s2">&quot;x&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">ylabel</span><span class="p">(</span><span class="s2">&quot;y&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">scatter</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X</span><span class="p">,</span> <span class="n">y_preds</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C1&quot;</span><span class="p">)</span>
-<span class="n">order</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">X</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">])</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">order</span><span class="p">],</span> <span class="n">y_preds</span><span class="p">[</span><span class="n">order</span><span class="p">][:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C1&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">plot</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">order</span><span class="p">],</span> <span class="n">y_preds</span><span class="p">[</span><span class="n">order</span><span class="p">][:,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">],</span> <span class="n">color</span><span class="o">=</span><span class="s2">&quot;C1&quot;</span><span class="p">,</span> <span class="n">ls</span><span class="o">=</span><span class="s2">&quot;--&quot;</span><span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">fill_between</span><span class="p">(</span><span class="n">X</span><span class="p">[</span><span class="n">order</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y_preds</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">][</span><span class="n">order</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">y_preds</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">0</span><span class="p">][</span><span class="n">order</span><span class="p">]</span><span class="o">.</span><span class="n">ravel</span><span class="p">(),</span> <span class="n">alpha</span><span class="o">=</span><span class="mf">0.2</span><span class="p">)</span>
-<span class="n">coverage_scores</span> <span class="o">=</span> <span class="p">[</span><span class="n">coverage_score</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">y_preds</span><span class="p">[:,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">i</span><span class="p">],</span> <span class="n">y_preds</span><span class="p">[:,</span> <span class="mi">2</span><span class="p">,</span> <span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">alpha</span><span class="p">)]</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">title</span><span class="p">(</span>
-    <span class="sa">f</span><span class="s2">&quot;Target and effective coverages for alpha=</span><span class="si">{</span><span class="n">alpha</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">: (</span><span class="si">{</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">coverage_scores</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)</span><span class="se">\n</span><span class="s2">&quot;</span> <span class="o">+</span>
-    <span class="sa">f</span><span class="s2">&quot;Target and effective coverages for alpha=</span><span class="si">{</span><span class="n">alpha</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.2f</span><span class="si">}</span><span class="s2">: (</span><span class="si">{</span><span class="mi">1</span><span class="o">-</span><span class="n">alpha</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">coverage_scores</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">:</span><span class="s2">.3f</span><span class="si">}</span><span class="s2">)&quot;</span>
-<span class="p">)</span>
-<span class="n">plt</span><span class="o">.</span><span class="n">show</span><span class="p">()</span>
-
-
-
-<span class="p">:</span><span class="n">width</span><span class="p">:</span> <span class="mi">400</span>
-<span class="p">:</span><span class="n">aligner</span>
-</pre></div>
-</div>
-<p>The title of the plot compares the target coverages with the effective coverages.
-The target coverage, or the confidence interval, is the fraction of true labels lying in the
-prediction intervals that we aim to obtain for a given dataset.
-It is given by the alpha parameter defined in <code class="docutils literal notranslate"><span class="pre">MapieRegressor</span></code>, here equal to <code class="docutils literal notranslate"><span class="pre">0.05</span></code> and <code class="docutils literal notranslate"><span class="pre">0.32</span></code>,
-thus giving target coverages of 0.95 and 0.68.
-The effective coverage is the actual fraction of true labels lying in the prediction intervals.
-==============================================</p>
 <div class="toctree-wrapper compound">
 </div>
-</div>
-</div>
-<div class="section" id="indices-and-tables">
-<h2>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h2>
-<ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
-<li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
-</ul>
-</div>
-</div>
+<p>Welcome to reconciliation_hts’s documentation !</p>
+<p>La je fais un essai et je vais à la ligne.</p>
 
 
           </div>
@@ -143,11 +55,22 @@ The effective coverage is the actual fraction of true labels lying in the predic
 
 
 <h3>Navigation</h3>
+<p class="caption"><span class="caption-text">Getting Started</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="quick_start.html">Quick Start with MAPIE</a></li>
+</ul>
+<p class="caption"><span class="caption-text">Documentation</span></p>
+<ul>
+<li class="toctree-l1"><a class="reference internal" href="theoretical_description.html">Theoretical Description</a></li>
+<li class="toctree-l1"><a class="reference internal" href="tutorial.html">Tutorial</a></li>
+<li class="toctree-l1"><a class="reference internal" href="api.html">MAPIE API</a></li>
+</ul>
 
 <div class="relations">
 <h3>Related Topics</h3>
 <ul>
   <li><a href="#">Documentation overview</a><ul>
+      <li>Next: <a href="quick_start.html" title="next chapter">Quick Start with MAPIE</a></li>
   </ul></li>
 </ul>
 </div>
