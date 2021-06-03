@@ -17,4 +17,4 @@ from Package.reconcilation import To_Reconcile
 
 def test_initialized() -> None:
     """Test that initialization does not crash."""
-    To_Reconcile(1,1,1)
+    To_Reconcile(1, 1, 1)

@@ -62,15 +62,13 @@ if __name__ == "__main__":
         return (a+b+c)
 
 
-
-class To_Reconcile :
-
+class To_Reconcile:
     def __init__(
         self,
         summing_mat: ArrayLike,
         in_sample_error_matrix: Optional[ArrayLike],
-        base_forecasts: ArrayLike 
-    ) -> None : 
+        base_forecasts: ArrayLike
+    ) -> None:
         self.summing_mat = summing_mat,
         self.in_sample_error_matrix = in_sample_error_matrix,
         self.base_forecasts = base_forecasts
