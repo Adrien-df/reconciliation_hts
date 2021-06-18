@@ -33,7 +33,7 @@ Python 3.7+
 🔍  References
 ==============
 
-MAPIE methods are based on the work by `Foygel-Barber et al. (2020) <https://www.stat.uchicago.edu/~rina/jackknife.html>`_.
+ methods are based on the work by `Foygel-Barber et al. (2020) <https://www.stat.uchicago.edu/~rina/jackknife.html>`_.
 
 [1] Rina Foygel Barber, Emmanuel J. Candès, Aaditya Ramdas, and Ryan J. Tibshirani.
 Predictive inference with the jackknife+. Ann. Statist., 49(1):486–507, 022021

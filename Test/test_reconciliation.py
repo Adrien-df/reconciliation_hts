@@ -13,7 +13,7 @@ from sklearn.exceptions import NotFittedError
 from sklearn.utils.estimator_checks import parametrize_with_checks
 from sklearn.utils.validation import check_is_fitted
 
-from Package.reconcilation import To_Reconcile
+from Package.Core.reconciliation import To_Reconcile
 
 def test_initialized() -> None:
     """Test that initialization does not crash."""

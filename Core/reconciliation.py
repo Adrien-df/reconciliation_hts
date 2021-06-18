@@ -63,6 +63,10 @@ if __name__ == "__main__":
 
 
 class To_Reconcile:
+    """[Test of docstring]
+
+    [This is the description oh the class that is realised thanks to the ocstring]
+    """
     def __init__(
         self,
         summing_mat: ArrayLike,
@@ -73,10 +77,10 @@ class To_Reconcile:
         self.in_sample_error_matrix = in_sample_error_matrix,
         self.base_forecasts = base_forecasts
 
-    def ma_fonction_lezardo(a:[int], b:[ArrayLike])-> double :
+    def une_fonction_hasardeuse(a:[int], b:[ArrayLike])-> int :
         """[summary]
 
-        [extended_summary]
+        [blabla bakalala]
 
         Parameters
         ----------
