@@ -2,15 +2,15 @@
 HTS API
 #########
 
-.. currentmodule:: reconciliation_hts
+.. currentmodule:: Package.Core
 
 Reconcile class
-==========
+================
 
 .. autosummary::
    :toctree: generated/
    :template: class.rst
 
-   Core.reconciliation.To_Reconcile
+   To_Reconcile
 
 

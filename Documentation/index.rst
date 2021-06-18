@@ -8,8 +8,6 @@
    :hidden:
    :caption: Getting Started
 
-   quick_start
-
 .. toctree::
    :maxdepth: 2
    :hidden:

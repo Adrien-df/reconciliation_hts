@@ -2,7 +2,7 @@
 Quick Start with HTS 
 ######################
 
-Description su quickstart
+Description du quickstart
 
 Mon titre numéro 1
 ==================================
