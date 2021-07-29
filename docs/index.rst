@@ -3,8 +3,9 @@
 Welcome to reconciliation_hts's documentation!
 ==============================================
 
-.. automodule:: main
+.. automodule:: Core.reconciliation
     :members:
+
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
