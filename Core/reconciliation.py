@@ -7,6 +7,10 @@ import pandas as pd
 from typing import Optional, Union, Iterable, Tuple, List
 from numpy.typing import ArrayLike
 from sklearn.metrics import mean_squared_error
+from sklearn.metrics import mean_absolute_error
+import random
+import utils
+import matplotlib.pyplot as plt
 
 
 
@@ -23,14 +27,14 @@ class To_Reconcile:
         base_forecasts: Optional[ArrayLike] = None,
         columns_labels_ordered: Optional[list[str]] = None,
         real_values: Optional[ArrayLike] = None,
-        reconciled_forecasts : ArrayLike = None
+        #reconciled_forecasts : ArrayLike = None
     ) -> None:
         self.data = data
         self.summing_mat = summing_mat
         self.in_sample_error_matrix = in_sample_error_matrix
         self.base_forecasts = base_forecasts
         self.columns_labels_ordered = columns_labels_ordered
-        self.reconciled_forecasts = reconciled_forecasts
+        #self.reconciled_forecasts = reconciled_forecasts
         self.real_values = real_values
 
     def _check_parameters(self)->None :
@@ -88,21 +92,51 @@ class To_Reconcile:
                                 self.summing_mat[i][j-m]=1
         return(self.summing_mat)
 
+    def _get_indexes_level(
+        self
+    )->dict :
+        dictionnary={'total' : 0}
+        L=len(self.columns_labels_ordered) #assert that the lenght is sufficient
+        n = self.data.shape[0]
+
+        for level in range(1,L):
+            indexes_of_level =[]
+            for i in range(1,n):
+                
+                if pd.isna(self.data.iloc[i][self.columns_labels_ordered[level]]) and not pd.isna(self.data.iloc[i][self.columns_labels_ordered[level-1]]) :
+                    indexes_of_level.append(i)
+        
+            dictionnary[self.columns_labels_ordered[level-1]]=indexes_of_level  
+        indexes_of_level = []
+        for i in range(1,n):
+            if not pd.isna(self.data.iloc[i][self.columns_labels_ordered[-1]]):
+                indexes_of_level.append(i)
+        dictionnary[self.columns_labels_ordered[-1]]=indexes_of_level           
+                
+            
+        return(dictionnary)                     
+                        
+
 
     def get_number_bottom_series(
         self,
     ) -> int :
-        #print(self.summing_mat)
         n = (self.summing_mat).shape[0]
         i=0
         while self.summing_mat[i].sum() != 1 :
             i+=1
         return (n-i)
 
+
     def reconcile(     
         self,
-        method: str
+        method: Optional[str] = 'MintSa',
+        index_to_reconcile: Optional[int] = -1,
+        reconcile_all: Optional[bool] =False
     ) -> ArrayLike :
+
+
+        #Faire tous les checks, notamment les checks de combinaison 
         
         if method=='OLS' :  #"OLS" "Variance_scaling" "Structural_Scaling" " Mint_Sample" "MinT_Shrink" "Top_down"
 
@@ -143,25 +177,121 @@ class To_Reconcile:
                 "Allowed values are 'OLS','BU', SS', 'VS', 'MinTSa' and 'MinTSh'."
             )
 
-        self.reconciled_forecasts = self.summing_mat@combination_matrix@self.base_forecasts
+        #self.reconciled_forecasts = self.summing_mat@combination_matrix@self.base_forecasts
 
-        return(self.reconciled_forecasts)
+        if reconcile_all :
+            return( [self.summing_mat@combination_matrix@self.base_forecasts[:,i] for i in len(self.base_forecasts)])
+        elif index_to_reconcile==-1 :
+            return(self.summing_mat@combination_matrix@self.base_forecasts)
+        else :
+            return(self.summing_mat@combination_matrix@self.base_forecasts[:,index_to_reconcile])
 
 
 
 
     def score(
         self,
-        metrics:str
+        metrics: Optional[str] ='rmse',
+        reconcile_method: Optional[str] = 'MinTSa',
+        
     ) -> pd.DataFrame :
 
+    #check that there is only one vector in base forecasts
+
         if metrics=='rmse' :
-            score_dataframe=pd.DataFrame(data = {'rmse' : [mean_squared_error(self.real_values,self.base_forecasts),mean_squared_error(self.real_values,self.reconciled_forecasts)]})
+            score_dataframe=pd.DataFrame(data = {'rmse' : [mean_squared_error(self.real_values,self.base_forecasts,squared=False),
+            mean_squared_error(self.real_values,self.reconcile(method=reconcile_method),squared=False)]})
+
+        elif metrics=='mse' :
+            score_dataframe=pd.DataFrame(data = {'rmse' : [mean_squared_error(self.real_values,self.base_forecasts,squared=False),
+            mean_squared_error(self.real_values,self.reconcile(method=reconcile_method),squared=False)]})
+
+        elif metrics=='mase' :
+            score_dataframe=pd.DataFrame(data = {'mase' : [mean_absolute_error(self.real_values,self.base_forecasts),
+            mean_absolute_error(self.real_values,self.reconcile(method=reconcile_method))]})
+
+        score_dataframe.rename(index={0: "Base forecast", 1: f"Reconciled forecast ({reconcile_method})"},inplace=True)
+        
+        return(score_dataframe)
+
+    
+    def cross_val_score( #You have to make sure that the shape of real values and predictions are the same and of size n 
+        self,
+        reconcile_method: Optional[str] = 'MinTSa',
+        metrics: Optional[str] = 'rmse',        
+        cv: Optional[int] =5,
+        test_all : Optional[bool] = False,
+
+    )->pd.DataFrame :
+
+        n = len(self.base_forecasts.T)
+        #assert that n> 1
+        if not test_all :
+            indexes = random.sample(range(n),cv)
+        if test_all :
+            indexes = np.arange(n)
+            self.cv = n
+
+        if metrics=='rmse' :
+
+            mean_score_real =0
+            mean_score_reconciled = 0
+            for index in indexes :
+                mean_score_real +=mean_squared_error(self.real_values[:,index],self.base_forecasts[:,index],squared=False)
+                mean_score_reconciled+=mean_squared_error(self.real_values[:,index],self.reconcile(method=reconcile_method,index_to_reconcile=index),squared=False)
+
+        elif metrics=='mase' :
+
+            mean_score_real =0
+            mean_score_reconciled = 0
+            for index in indexes :
+                mean_score_real +=mean_absolute_error(self.real_values[:,index],self.base_forecasts[:,index])
+                mean_score_reconciled+=mean_absolute_error(self.real_values[:,index],self.reconcile(method=reconcile_method,index_to_reconcile=index))
+
+        elif metrics=='mse' :
+
+            mean_score_real =0
+            mean_score_reconciled = 0
+            for index in indexes :
+                mean_score_real +=mean_squared_error(self.real_values[:,index],self.base_forecasts[:,index])
+                mean_score_reconciled+=mean_squared_error(self.real_values[:,index],self.reconcile(method=reconcile_method,index_to_reconcile=index))
+    
+        else :
+            raise ValueError(
+                "Invalid method. "
+                "Allowed values are 'rmse','mase','mse'."
+            )
+    
+        score_dataframe=pd.DataFrame(data = {metrics : [mean_score_real/self.cv,mean_score_reconciled/self.cv]})
+        score_dataframe.rename(index={0: "Base forecast", 1: f"Reconciled forecast ({reconcile_method})"},inplace=True)
 
         return(score_dataframe)
 
+    def plot(
+        self,
+        level: Optional[str] ='total',
+        reconcile_method: Optional[str] = 'MinTSa', 
+        indexes: Optional[ArrayLike]= -1  ,
+        plot_real: Optional[bool] = True 
+                      
+    ) -> None :
+    #asser that we hace the real values 
+    #assert that plot in total +columns label ordered
+        indexes_of_series = self._get_indexes_level()
 
-    
-    
-    
-    
+        if indexes==-1 :
+            indexes=np.arange(self.real_values.shape[1])
+        for index in indexes_of_series[level] :
+            plt.plot(self.base_forecasts[index,indexes],color='blue')
+            plt.plot(np.asarray([self.reconcile(method=reconcile_method,index_to_reconcile=i) for i in indexes]).T[index],color='green')
+            if plot_real :
+                plt.plot(self.real_values[index,indexes],color='red')
+            plt.title(f"Je dois trouver un titre")
+        plt.show()
+
+        
+        
+        
+
+            
+
