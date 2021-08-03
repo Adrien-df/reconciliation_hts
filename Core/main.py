@@ -4,6 +4,7 @@ from numpy.typing import ArrayLike
 import numpy as np
 import matplotlib.pyplot as plt
 import sklearn.metrics
+import random
 
 if __name__ == "__main__":
     #input = input()
@@ -17,10 +18,11 @@ if __name__ == "__main__":
 
    
     object = To_Reconcile(data = data_m5, base_forecasts= predictions,columns_labels_ordered=['state_id','store_id', 'cat_id', 'dept_id'],in_sample_error_matrix=error_matrix,real_values=reals)
-    object.compute_summing_mat()
+    #object.compute_summing_mat()
     #object.reconcile(method='MinTSh')
-    print(object.cross_val_score(metrics='mase',reconcile_method='MinTSh',test_all=True))
-    object.plot(level='total',reconcile_method='MinTSh')
+    #print(object.cross_val_score(metrics='mase',reconcile_method='MinTSh',test_all=True))
+    #object.plot(level='total',reconcile_method='MinTSh')
+    print(object.proba_reconcile(column_to_reconcile=2))
 
     #print(data_m5['prediction'])
     

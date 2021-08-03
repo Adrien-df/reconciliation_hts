@@ -152,10 +152,36 @@ class To_Reconcile:
         self,
         method: Optional[str] = 'MintSa',
         column_to_reconcile: Optional[int] = -1,
-        reconcile_all: Optional[bool] =False
+        reconcile_all: Optional[bool] =False,
+        _vector_to_proba_reconcile : Optional[np.ndarray] = None,
+        show_lambda: Optional[bool] = False
     ) -> ArrayLike :
+        """[summary]
 
+        [extended_summary]
 
+        Parameters
+        ----------
+        method : Optional[str], optional
+            [description], by default 'MintSa'
+        column_to_reconcile : Optional[int], optional
+            [description], by default -1
+        reconcile_all : Optional[bool], optional
+            [description], by default False
+
+        Returns
+        -------
+        ArrayLike
+            [description]
+
+        Raises
+        ------
+        ValueError
+            [description]
+        """
+
+        if self.summing_mat is None :
+            self.summing_mat = self.compute_summing_mat()
         #Faire tous les checks, notamment les checks de combinaison 
         
         if method=='OLS' :  #"OLS" "Variance_scaling" "Structural_Scaling" " Mint_Sample" "MinT_Shrink" "Top_down"
@@ -175,7 +201,6 @@ class To_Reconcile:
 
             number_error_vectors = self.in_sample_error_matrix.shape[1]
             W1=np.zeros((self.summing_mat.shape[0],self.summing_mat.shape[0]))
-            #return(self.in_sample_error_matrix[:,1][:,None])@(self.in_sample_error_matrix[:,1][:,None].T)
             for i in range(number_error_vectors):
                 W1+=(self.in_sample_error_matrix[:,i][:,None])@(self.in_sample_error_matrix[:,i][:,None].T)
             
@@ -190,7 +215,8 @@ class To_Reconcile:
                 if self.lambd ==None :
                     
                     lambd = self._compute_lambda()
-                    print("lambda parameter is equal to ",lambd)
+                    if show_lambda :
+                        print("lambda parameter for MinTSh reconciliation method is equal to : ",lambd)
                 else : 
                     lambd = self.lambd
                 
@@ -205,8 +231,9 @@ class To_Reconcile:
             )
 
         #self.reconciled_forecasts = self.summing_mat@combination_matrix@self.base_forecasts
-
-        if reconcile_all :
+        if _vector_to_proba_reconcile is not None :
+            return(self.summing_mat@combination_matrix@_vector_to_proba_reconcile)
+        elif reconcile_all :
             return( [self.summing_mat@combination_matrix@self.base_forecasts[:,i] for i in len(self.base_forecasts)])
         elif column_to_reconcile==-1 :
             return(self.summing_mat@combination_matrix@self.base_forecasts)
@@ -259,26 +286,25 @@ class To_Reconcile:
             indexes = np.arange(n)
             self.cv = n
 
+        mean_score_real =0
+        mean_score_reconciled = 0
+
         if metrics=='rmse' :
 
-            mean_score_real =0
-            mean_score_reconciled = 0
+            
             for index in indexes :
                 mean_score_real +=mean_squared_error(self.real_values[:,index],self.base_forecasts[:,index],squared=False)
                 mean_score_reconciled+=mean_squared_error(self.real_values[:,index],self.reconcile(method=reconcile_method,column_to_reconcile=index),squared=False)
 
         elif metrics=='mase' :
 
-            mean_score_real =0
-            mean_score_reconciled = 0
+            
             for index in indexes :
                 mean_score_real +=mean_absolute_error(self.real_values[:,index],self.base_forecasts[:,index])
                 mean_score_reconciled+=mean_absolute_error(self.real_values[:,index],self.reconcile(method=reconcile_method,column_to_reconcile=index))
 
         elif metrics=='mse' :
 
-            mean_score_real =0
-            mean_score_reconciled = 0
             for index in indexes :
                 mean_score_real +=mean_squared_error(self.real_values[:,index],self.base_forecasts[:,index])
                 mean_score_reconciled+=mean_squared_error(self.real_values[:,index],self.reconcile(method=reconcile_method,column_to_reconcile=index))
@@ -326,6 +352,55 @@ class To_Reconcile:
         plt.show()
 
         
+    def proba_reconcile(
+        self,
+        method: Optional[str] = 'MinTSh',
+        alpha : Optional[float] = 0.05,
+        samples_to_bootstrap : Optional[int] = -1,
+        column_to_reconcile: Optional[int] = -1,
+        reconcile_all: Optional[bool] =False
+    ) -> None :
+
+    #make sure the number of ssamples to bootstrap is smaller or equal tahn error matrix shape [1]
+
+        if samples_to_bootstrap == -1 :
+            samples_to_bootstrap = self.in_sample_error_matrix.shape[1]
+        if column_to_reconcile ==-1 :
+            column_to_reconcile = self.base_forecasts.shape[1]
+
+        sample_base_forecasts = np.zeros(shape=(self.base_forecasts.shape[0],samples_to_bootstrap))
+
+        for s in range(samples_to_bootstrap) :
+            random_index = random.randint(0,self.in_sample_error_matrix.shape[1]-1)
+            #print(sample_base_forecasts[:,s].shape)
+            #print(self.base_forecasts[:,column_to_reconcile].shape)
+            sample_base_forecasts[:,s] = self.base_forecasts[:,column_to_reconcile] + self.in_sample_error_matrix[:,random_index]
+        
+        sample_reconciled_forecasts = np.zeros(shape=(self.base_forecasts.shape[0],samples_to_bootstrap))
+
+        for s in range(samples_to_bootstrap) :
+            sample_reconciled_forecasts[:,s]=self.reconcile(method = method, _vector_to_proba_reconcile = sample_base_forecasts[:,s])
+        
+        test = np.quantile(sample_reconciled_forecasts,q=[0.05,0.5,0.95],axis=1)
+        print(test.shape)
+        #print(self.real_values[:,column_to_reconcile])
+        number_outs=0
+        for i in range(self.base_forecasts.shape[0]):
+            if (self.real_values[:,column_to_reconcile][i]<test[0,i]) :
+                print('low')
+                number_outs+=1
+            if  (self.real_values[:,column_to_reconcile][i]>test[2,i]):
+                print('high')
+                number_outs+=1
+
+        print(f"The share of out for level {alpha} is {round(number_outs/self.base_forecasts.shape[0],3)} %")
+            #print( test[0,i],self.real_values[:,column_to_reconcile],test[2,i])
+        
+
+        #return(test)
+
+
+    
         
         
 
