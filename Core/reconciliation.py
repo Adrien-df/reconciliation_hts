@@ -384,16 +384,17 @@ class To_Reconcile:
         test = np.quantile(sample_reconciled_forecasts,q=[0.05,0.5,0.95],axis=1)
         print(test.shape)
         #print(self.real_values[:,column_to_reconcile])
-        number_outs=0
+        high=0
+        low=0
         for i in range(self.base_forecasts.shape[0]):
             if (self.real_values[:,column_to_reconcile][i]<test[0,i]) :
-                print('low')
-                number_outs+=1
+                #print('low')
+                low+=1
             if  (self.real_values[:,column_to_reconcile][i]>test[2,i]):
-                print('high')
-                number_outs+=1
+                #print('high')
+                high+=1
 
-        print(f"The share of out for level {alpha} is {round(number_outs/self.base_forecasts.shape[0],3)} %")
+        print(f"The share of out for level {alpha} is {round((low+high)/self.base_forecasts.shape[0],3)} % with {high} forecasts outbond + and {low} outbound -")
             #print( test[0,i],self.real_values[:,column_to_reconcile],test[2,i])
         
 
