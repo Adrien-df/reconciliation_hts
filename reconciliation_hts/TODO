@@ -1,0 +1,1 @@
+#If i want to implement a score that computes wether the reconcilaition is better, my base forecasts needs to be a matrix with all the vector of forecasts for all the validaion set. Example : 10 hts with a valisaion set of 5 data. We have a 10*5 matrix. We would also need the valdition set. 

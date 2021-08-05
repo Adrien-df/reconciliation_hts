@@ -12,67 +12,150 @@ import random
 import utils
 import matplotlib.pyplot as plt
 from statsmodels.stats.moment_helpers import cov2corr
+import warnings
 
 
 
 
 class To_Reconcile:
-    """[Test of docstring]
-
-    [This is the description of the class that is realised thanks to the docstring]
-    """
+    
     def __init__(
         self,
         data: Optional[pd.DataFrame] = None,
-        summing_mat: Optional[np.ndarray] = None,
-        in_sample_error_matrix: Optional[ArrayLike] = None,
-        base_forecasts: Optional[ArrayLike] = None,
         columns_labels_ordered: Optional[list[str]] = None,
-        real_values: Optional[ArrayLike] = None,
-        #reconciled_forecasts : ArrayLike = None
-        lambd = None
+        summing_mat: Optional[np.ndarray] = None,
+        base_forecasts: Optional[np.ndarray] = None,        
+        real_values: Optional[np.ndarray] = None,
+        in_sample_error_matrix: Optional[np.ndarray] = None,
+        lambd = None,
+        check_inputs = False
     ) -> None:
         self.data = data
         self.summing_mat = summing_mat
         self.in_sample_error_matrix = in_sample_error_matrix
         self.base_forecasts = base_forecasts
         self.columns_labels_ordered = columns_labels_ordered
-        #self.reconciled_forecasts = reconciled_forecasts
         self.real_values = real_values
         self.lambd = lambd
+        self.check_inputs = check_inputs
 
-    def _check_parameters(self)->None :
-        """[summary]
+    def _check_compatibility(self)-> None :
+        """
+        [Performs several checks on the compatibility of the inputs provided]
 
         [extended_summary]
 
         Raises
         ------
         ValueError
-            [description]
-        ValueError
-            [description]
-        ValueError
-            [description]
+            [If mutually exclusive parameters are given in input]
         """
-        if not isinstance(self.summing_mat,np.ndarray):
-            raise ValueError(
-                "Invalid type for summing matrix. Expected numpy array type "
-            )
+        if not self.check_inputs :
 
-        if len(self.summing_mat)<3 :
-            raise ValueError(
-                "Invalid summing_mat shape. Msut be of shape >= 3."
-            )
-        if len(np.unique(self.summing_mat)) != 2 :
-            raise ValueError(
-                "Invalid summing_mat argument. Must contain zero and ones only."
-            )
+            if self.data is not None :
+                if self.summing_mat is not None :
+                    raise ValueError(
+                    "data and summing_mat were provided. Either you provide summing_mat OR data + columns_labels_ordered "
+                )
+            
+            if self.columns_labels_ordered is not None :
+                if self.summing_mat is not None :
+                    raise ValueError(
+                    "columns_labels_ordered and summing_mat were provided. Either you provide summing_mat OR data + columns_labels_ordered "
+                )
+
+            if self.data is None and self.summing_mat is None :
+                raise ValueError(
+                    "You have to provide either summing_mat OR data + columns_labels_ordered"
+                )
+
+
+
+    def _check_parameters(self)->None :
+        """
+        [Perform several checks on input parameters]
+
+        [extended_summary]
+
+        Raises
+        ------
+        ValueError
+            [If one of the parameters is not valid]
+        
+        """
+        if not self.check_inputs :
+
+            if not isinstance(self.data,pd.DataFrame):
+                raise ValueError("Invalid type for data. Expected pd.DataFrame object"
+                )
+            
+            if self.summing_mat is not None :
+                if not isinstance(self.summing_mat,np.ndarray):
+                    raise ValueError(
+                        "Invalid type for summing matrix. Expected numpy array type "
+                    )
+                if self.summing_mat.shape[0]<3 :
+                    raise ValueError(
+                        "Invalid summing_mat shape. Must be of shape >= 3."
+                    )
+            
+            if not isinstance(self.base_forecasts,np.ndarray):
+                raise ValueError(
+                    "Invalid type for base forecasts. Expected numpy array type "
+                )
+
+            if not isinstance(self.real_values,np.ndarray):
+                raise ValueError(
+                    "Invalid type for real values. Expected numpy array type "
+                )
+
+            if not isinstance(self.in_sample_error_matrix,np.ndarray):
+                raise ValueError(
+                    "Invalid type for error_matrix. Expected numpy array type "        
+                )
+
+            if self.data is not None :
+
+                for element in self.columns_labels_ordered :
+                    check=1
+                    if element not in self.data.columns :
+                        check=0
+                        break
+                if check==0 :
+                    raise ValueError(
+                    "Some of the columns name provided in columns_label_ordered are not in data. Check the columns and their names "        
+                )
+
+                if self.data.shape[0] != self.base_forecasts.shape[0] :
+                    raise ValueError(f" data has {self.data.shape[0]} rows and base_forecasts has {self.base_forecasts.shape[0]} . Same value is expected."
+                    )
+
+                if self.real_values is not None :
+                    if self.data.shape[0] != self.real_values.shape[0] :
+                        raise ValueError(f" data has {self.data.shape[0]} rows and real_values has {self.real_values.shape[0]} . Same value is expected."
+                    )
+                
+                if self.in_sample_error_matrix is not None :
+                    if self.data.shape[0] != self.in_sample_error_matrix.shape[0] :
+                        raise ValueError(f" data has {self.data.shape[0]} rows and in_sample_error_matrix has {self.in_sample_error_matrix.shape[0]} . Same value is expected."
+                    )
+
+       
 
         
     def compute_summing_mat(
         self
     ) -> np.ndarray:
+        """
+        [Computes the summing_matrix]
+
+        [When data and columns_label_ordered is passed in input, this method will automatically compute the summing matrix]
+
+        Returns
+        -------
+        np.ndarray
+            [The summing matrix used for reconciliation afterwards]
+        """
 
         L=len(self.columns_labels_ordered) #assert that the lenght is sufficient
         n = self.data.shape[0]
@@ -179,6 +262,9 @@ class To_Reconcile:
         ValueError
             [description]
         """
+        self._check_compatibility()
+        self._check_parameters()
+        self.check_inputs = True
 
         if self.summing_mat is None :
             self.summing_mat = self.compute_summing_mat()
@@ -230,7 +316,7 @@ class To_Reconcile:
                 "Allowed values are 'OLS','BU', SS', 'VS', 'MinTSa' and 'MinTSh'."
             )
 
-        #self.reconciled_forecasts = self.summing_mat@combination_matrix@self.base_forecasts
+        
         if _vector_to_proba_reconcile is not None :
             return(self.summing_mat@combination_matrix@_vector_to_proba_reconcile)
         elif reconcile_all :
@@ -382,10 +468,11 @@ class To_Reconcile:
             sample_reconciled_forecasts[:,s]=self.reconcile(method = method, _vector_to_proba_reconcile = sample_base_forecasts[:,s])
         
         test = np.quantile(sample_reconciled_forecasts,q=[0.05,0.5,0.95],axis=1)
-        print(test.shape)
+        #print(test.shape)
         #print(self.real_values[:,column_to_reconcile])
         high=0
         low=0
+
         for i in range(self.base_forecasts.shape[0]):
             if (self.real_values[:,column_to_reconcile][i]<test[0,i]) :
                 #print('low')
@@ -394,9 +481,11 @@ class To_Reconcile:
                 #print('high')
                 high+=1
 
-        print(f"The share of out for level {alpha} is {round((low+high)/self.base_forecasts.shape[0],3)} % with {high} forecasts outbond + and {low} outbound -")
-            #print( test[0,i],self.real_values[:,column_to_reconcile],test[2,i])
-        
+        #print(f"The share of out for level {alpha} is {round((low+high)/self.base_forecasts.shape[0],3)} % with {high} forecasts outbond + and {low} outbound -")
+            #print(f"The lower bound for {i} th time series is {test[0,i]} and the upper bound id {test[2,i]}" )
+        score_dataframe=pd.DataFrame(data = {'lower_bound' : [test[0,i] for i in range(114)],'upper_bound' : [test[2,i] for i in range(114)]})
+        print(score_dataframe)
+        #score_dataframe.rename(index={0: "Base forecast", 1: f"Reconciled forecast ({reconcile_method})"},inplace=True)
 
         #return(test)
 
