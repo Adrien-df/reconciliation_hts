@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 import random
-from Core import utils
+import utils
 import matplotlib.pyplot as plt
 from statsmodels.stats.moment_helpers import cov2corr
 
@@ -14,7 +14,7 @@ class To_Reconcile:
     def __init__(
         self,
         base_forecasts: np.ndarray,
-        in_sample_error_matrix: np.ndarray,
+        error_matrix: np.ndarray,
         data: Optional[pd.DataFrame] = None,
         columns_ordered: Optional[list[str]] = None,
         summing_mat: Optional[np.ndarray] = None,
@@ -24,7 +24,7 @@ class To_Reconcile:
     ) -> None:
         self.data = data
         self.summing_mat = summing_mat
-        self.in_sample_error_matrix = in_sample_error_matrix
+        self.error_matrix = error_matrix
         self.base_forecasts = base_forecasts
         self.columns_ordered = columns_ordered
         self.real_values = real_values
@@ -75,13 +75,13 @@ class To_Reconcile:
             [If one of the parameters is not valid]
         """
 
-        if not isinstance(self.data, pd.DataFrame):
+        if not isinstance(self.data, (pd.DataFrame, type(None))):
             raise ValueError(
                 "Invalid type for data."
                 "Expected pd.DataFrame object"
             )
         if self.summing_mat is not None:
-            if not isinstance(self.summing_mat, np.ndarray):
+            if not isinstance(self.summing_mat, (np.ndarray, type(None))):
                 raise ValueError(
                     "Invalid type for summing matrix"
                     " Expected np.ndarray type"
@@ -90,17 +90,42 @@ class To_Reconcile:
                 raise ValueError(
                     "Invalid summing_mat shape. Must be of shape >= 3."
                 )
-        if not isinstance(self.base_forecasts, np.ndarray):
+
+            if self.summing_mat.shape[0] != self.error_matrix.shape[0]:
+
+                raise ValueError(
+                    "Summing matrix must have as many rows as data"
+                )
+        if self.error_matrix.shape[0] != self.base_forecasts.shape[0]:
+            raise ValueError(
+                "The error matrix and base forecats must have"
+                "the same number of rows"
+            )
+
+        if self.real_values is not None:
+            if self.real_values.shape[0] != self.base_forecasts.shape[0]:
+                raise ValueError(
+                    "The real values and base forecats must have"
+                    "the same number of rows"
+                )
+            if self.real_values.ndim > 1:
+                if self.real_values.shape[1] != self.base_forecasts.shape[1]:
+                    raise ValueError(
+                        "Real values and base forecats"
+                        "must have the same dimension"
+                    )
+
+        if not isinstance(self.base_forecasts, (np.ndarray, type(None))):
             raise ValueError(
                 "Invalid type for base forecasts. Expected np.ndarray type"
             )
 
-        if not isinstance(self.real_values, np.ndarray):
+        if not isinstance(self.real_values, (np.ndarray, type(None))):
             raise ValueError(
                 "Invalid type for real values. Expected numpy array type"
             )
 
-        if not isinstance(self.in_sample_error_matrix, np.ndarray):
+        if not isinstance(self.error_matrix, (np.ndarray, type(None))):
             raise ValueError(
                 "Invalid type for error_matrix. Expected numpy array type"
             )
@@ -132,14 +157,14 @@ class To_Reconcile:
                         "real_values has {self.real_values.shape[0]} rows"
                         "Same value is expected."
                     )
-            if self.in_sample_error_matrix is not None:
+            if self.error_matrix is not None:
                 n = self.data.shape[0]
-                m = self.in_sample_error_matrix.shape[0]
+                m = self.error_matrix.shape[0]
                 if n != m:
                     raise ValueError(
                         f" data has {self.data.shape[0]} rows"
-                        "in_sample_error_matrix has"
-                        f"{self.in_sample_error_matrix.shape[0]} rows"
+                        "error_matrix has"
+                        f"{self.error_matrix.shape[0]} rows"
                         "Same value is expected."
                     )
 
@@ -151,6 +176,16 @@ class To_Reconcile:
             raise ValueError(
                 "Invalid reconciliation method. "
                 "Allowed values are 'OLS','BU', 'SS', 'VS', 'MinTSa', 'MinTSh'"
+            )
+
+    def _check_metrics(
+        self,
+        metrics
+    ) -> None:
+        if metrics not in ['rmse', 'mase', 'mse']:
+            raise ValueError(
+                "Invalid method. "
+                "Allowed values are 'rmse','mase','mse'."
             )
 
     def compute_summing_mat(
@@ -168,7 +203,7 @@ class To_Reconcile:
             [The summing matrix used for reconciliation afterwards]
         """
 
-        L = len(self.columns_ordered)  # assert that the lenght is sufficient
+        L = len(self.columns_ordered)
         n = self.data.shape[0]
         m = self.data[self.columns_ordered].isna().any(axis=1).sum()
         self.summing_mat = np.zeros([n, n-m])
@@ -178,9 +213,12 @@ class To_Reconcile:
         for level in range(1, L):
 
             for i in range(1, n-m):
-                if pd.isna(self.data.iloc[i][self.columns_ordered[level]]) and not pd.isna(self.data.iloc[i][self.columns_ordered[level-1]]):
+                z = level   # Just for PEP8 accomodation
+                if pd.isna(self.data.iloc[i][self.columns_ordered[z]]) and not(
+                        pd.isna(self.data.iloc[i][self.columns_ordered[z-1]])):
                     list_of_values = [
-                        self.data.iloc[i][self.columns_ordered[k]] for k in range(level)]
+                        self.data.iloc[i][self.columns_ordered[k]]
+                        for k in range(level)]
 
                     for j in range(m, n):
                         if [self.data.iloc[j][self.columns_ordered[k]]
@@ -261,7 +299,7 @@ class To_Reconcile:
             [Shrinkage parameter, belongs to [0,1]]
         """
 
-        res = np.matrix(self.in_sample_error_matrix).T
+        res = np.matrix(self.error_matrix).T
 
         number_error_vectors = res.shape[0]
 
@@ -350,7 +388,7 @@ class To_Reconcile:
 
         if self.summing_mat is None:
             self.summing_mat = self.compute_summing_mat()
-        
+
         if method == 'OLS':
             combination_matrix = np.linalg.inv(np.transpose(
                 self.summing_mat)@self.summing_mat)@(
@@ -359,7 +397,8 @@ class To_Reconcile:
         elif method == 'BU':
             combination_matrix = np.concatenate(
                 (np.zeros(shape=(self._get_number_bottom_series(),
-                                 self.summing_mat.shape[0]-self._get_number_bottom_series())),
+                                 self.summing_mat.shape[0] -
+                                 self._get_number_bottom_series())),
                     np.identity(self._get_number_bottom_series())), axis=1)
 
         elif method == 'SS':
@@ -372,13 +411,13 @@ class To_Reconcile:
 
         elif method in ['VS', 'MinTSa', 'MinTSh']:
 
-            number_error_vectors = self.in_sample_error_matrix.shape[1]
+            number_error_vectors = self.error_matrix.shape[1]
             W1 = np.zeros(
                 (self.summing_mat.shape[0], self.summing_mat.shape[0]))
 
             for i in range(number_error_vectors):
-                W1 += (self.in_sample_error_matrix[:, i][:, None])@(
-                    self.in_sample_error_matrix[:, i][:, None].T)
+                W1 += (self.error_matrix[:, i][:, None])@(
+                    self.error_matrix[:, i][:, None].T)
             W1 = W1/number_error_vectors
 
             if method == 'VS':
@@ -432,8 +471,40 @@ class To_Reconcile:
         reconcile_method: Optional[str] = 'MinTSa',
 
     ) -> pd.DataFrame:
+        """[Assess if reconciliation improves forecast]
 
-        # if self.base_forecasts
+        [This method enables you to compute the score of ONE reconciled
+         forecast versus the original forecast. You choose your metrics
+         and the reconciliation method. For computing the score on
+          multiple reconciliations, see cross_score() method]
+
+        Parameters
+        ----------
+        metrics : Optional[str], optional
+            [metrics for evaluating distance to real values], by default 'rmse'
+        reconcile_method : Optional[str], optional
+            [method chosen for reconciliation], by default 'MinTSa'
+
+        Returns
+        -------
+        pd.DataFrame
+            [Pandas DataFrame with the two scores displayed]
+
+        Raises
+        ------
+        ValueError
+            [If base forecast parmameter has more than one vector of forecasts]
+        """
+
+        self._check_metrics(metrics=metrics)
+
+        if self.base_forecasts.ndim > 1:
+            raise ValueError(
+                "Use cross_score(). score() method used when assessing "
+                "if reconciliation improves ONE vector of base forecast"
+                "Here, you instantiated the class with "
+                f"{self.base_forecasts.shape[1]} base forecasts."
+            )
 
         if metrics == 'rmse':
             score_dataframe = pd.DataFrame(data={'rmse': [mean_squared_error(
@@ -462,15 +533,43 @@ class To_Reconcile:
 
         return(score_dataframe)
 
-    def cross_val_score(
+    def cross_score(
         self,
         reconcile_method: Optional[str] = 'MinTSa',
         metrics: Optional[str] = 'rmse',
+        test_all: Optional[bool] = True,
         cv: Optional[int] = 5,
-        test_all: Optional[bool] = False,
 
     ) -> pd.DataFrame:
+        """[Asses if reconciliation improves the forecasts]
 
+        [This method compares the performance of reconciled forecasts
+         (in regards to the real values) with the performance of the original
+          base forecasts. You can decide to compare the performance on all
+          the test set or only on a random sample of the test set with
+           test_all = False and by setting a value for cv ]
+
+        Parameters
+        ----------
+        reconcile_method : Optional[str], optional
+            [method chosen for reconciliation], by default 'MinTSa'
+        metrics : Optional[str], optional
+            [metrics for evaluating distance to real values], by default 'rmse'
+        test_all : Optional[bool], optional
+            [Wether you ant to test all base forecasts], by default False
+        cv : Optional[int], optional
+            [If test_all = False, size of sample to test], by default 5
+
+
+        Returns
+        -------
+        pd.DataFrame
+            [Pandas DataFrame with the two scores displayed]
+
+
+        """
+
+        self.check_metrics(metrics=metrics)
         n = len(self.base_forecasts.T)
         # assert that n> 1
         if not test_all:
@@ -510,12 +609,6 @@ class To_Reconcile:
                 mean_score_reconciled += mean_squared_error(
                     self.real_values[:, index], self.reconcile(
                         method=reconcile_method, column_to_reconcile=index))
-
-        else:
-            raise ValueError(
-                "Invalid method. "
-                "Allowed values are 'rmse','mase','mse'."
-            )
 
         score_dataframe = pd.DataFrame(
             data={metrics: [mean_score_real/self.cv,
@@ -579,7 +672,7 @@ class To_Reconcile:
         # tahn error matrix shape [1]
 
         if samples_to_bootstrap == -1:
-            samples_to_bootstrap = self.in_sample_error_matrix.shape[1]
+            samples_to_bootstrap = self.error_matrix.shape[1]
         if column_to_reconcile == -1:
             column_to_reconcile = self.base_forecasts.shape[1]
 
@@ -588,10 +681,11 @@ class To_Reconcile:
 
         for s in range(samples_to_bootstrap):
             random_index = random.randint(
-                0, self.in_sample_error_matrix.shape[1]-1)
+                0, self.error_matrix.shape[1]-1)
 
-            sample_base_forecasts[:, s] = self.base_forecasts[:,
-                                                              column_to_reconcile] + self.in_sample_error_matrix[:, random_index]
+            sample_base_forecasts[:, s] = self.base_forecasts[
+                :, column_to_reconcile] + self.error_matrix[
+                    :, random_index]
 
         sample_reconciled_forecasts = np.zeros(
             shape=(self.base_forecasts.shape[0], samples_to_bootstrap))
