@@ -4,7 +4,7 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 import random
-import utils
+from Core import utils
 import matplotlib.pyplot as plt
 from statsmodels.stats.moment_helpers import cov2corr
 
@@ -13,12 +13,12 @@ class To_Reconcile:
 
     def __init__(
         self,
+        base_forecasts: np.ndarray,
+        in_sample_error_matrix: np.ndarray,
         data: Optional[pd.DataFrame] = None,
         columns_ordered: Optional[list[str]] = None,
         summing_mat: Optional[np.ndarray] = None,
-        base_forecasts: Optional[np.ndarray] = None,
         real_values: Optional[np.ndarray] = None,
-        in_sample_error_matrix: Optional[np.ndarray] = None,
         lambd=None,
         inputs_are_checked=False
     ) -> None:
@@ -74,75 +74,84 @@ class To_Reconcile:
         ValueError
             [If one of the parameters is not valid]
         """
-        if not self.inputs_are_checked:
 
-            if not isinstance(self.data, pd.DataFrame):
+        if not isinstance(self.data, pd.DataFrame):
+            raise ValueError(
+                "Invalid type for data."
+                "Expected pd.DataFrame object"
+            )
+        if self.summing_mat is not None:
+            if not isinstance(self.summing_mat, np.ndarray):
                 raise ValueError(
-                    "Invalid type for data."
-                    "Expected pd.DataFrame object"
+                    "Invalid type for summing matrix"
+                    " Expected np.ndarray type"
                 )
-            if self.summing_mat is not None:
-                if not isinstance(self.summing_mat, np.ndarray):
-                    raise ValueError(
-                        "Invalid type for summing matrix"
-                        " Expected np.ndarray type"
-                    )
-                if self.summing_mat.shape[0] < 3:
-                    raise ValueError(
-                        "Invalid summing_mat shape. Must be of shape >= 3."
-                    )
-            if not isinstance(self.base_forecasts, np.ndarray):
+            if self.summing_mat.shape[0] < 3:
                 raise ValueError(
-                    "Invalid type for base forecasts. Expected np.ndarray type"
+                    "Invalid summing_mat shape. Must be of shape >= 3."
                 )
+        if not isinstance(self.base_forecasts, np.ndarray):
+            raise ValueError(
+                "Invalid type for base forecasts. Expected np.ndarray type"
+            )
 
-            if not isinstance(self.real_values, np.ndarray):
+        if not isinstance(self.real_values, np.ndarray):
+            raise ValueError(
+                "Invalid type for real values. Expected numpy array type"
+            )
+
+        if not isinstance(self.in_sample_error_matrix, np.ndarray):
+            raise ValueError(
+                "Invalid type for error_matrix. Expected numpy array type"
+            )
+
+        if self.data is not None:
+
+            for element in self.columns_ordered:
+                check = 1
+                if element not in self.data.columns:
+                    check = 0
+                    break
+            if check == 0:
                 raise ValueError(
-                    "Invalid type for real values. Expected numpy array type"
+                    "Columns name provided in columns_ordered not in data"
+                    "Check the columns and their names"
                 )
 
-            if not isinstance(self.in_sample_error_matrix, np.ndarray):
+            if self.data.shape[0] != self.base_forecasts.shape[0]:
                 raise ValueError(
-                    "Invalid type for error_matrix. Expected numpy array type"
+                    f" data has {self.data.shape[0]} rows"
+                    "base_forecast has {self.base_forecasts.shape[0]} rows"
+                    "Same value is expected"
                 )
 
-            if self.data is not None:
-
-                for element in self.columns_ordered:
-                    check = 1
-                    if element not in self.data.columns:
-                        check = 0
-                        break
-                if check == 0:
-                    raise ValueError(
-                        "Columns name provided in columns_ordered not in data"
-                        "Check the columns and their names"
-                    )
-
-                if self.data.shape[0] != self.base_forecasts.shape[0]:
+            if self.real_values is not None:
+                if self.data.shape[0] != self.real_values.shape[0]:
                     raise ValueError(
                         f" data has {self.data.shape[0]} rows"
-                        "base_forecast has {self.base_forecasts.shape[0]} rows"
-                        "Same value is expected"
+                        "real_values has {self.real_values.shape[0]} rows"
+                        "Same value is expected."
+                    )
+            if self.in_sample_error_matrix is not None:
+                n = self.data.shape[0]
+                m = self.in_sample_error_matrix.shape[0]
+                if n != m:
+                    raise ValueError(
+                        f" data has {self.data.shape[0]} rows"
+                        "in_sample_error_matrix has"
+                        f"{self.in_sample_error_matrix.shape[0]} rows"
+                        "Same value is expected."
                     )
 
-                if self.real_values is not None:
-                    if self.data.shape[0] != self.real_values.shape[0]:
-                        raise ValueError(
-                            f" data has {self.data.shape[0]} rows"
-                            "real_values has {self.real_values.shape[0]} rows"
-                            "Same value is expected."
-                        )
-                if self.in_sample_error_matrix is not None:
-                    n = self.data.shape[0]
-                    m = self.in_sample_error_matrix.shape[0]
-                    if n != m:
-                        raise ValueError(
-                            f" data has {self.data.shape[0]} rows"
-                            "in_sample_error_matrix has"
-                            f"{self.in_sample_error_matrix.shape[0]} rows"
-                            "Same value is expected."
-                        )
+    def _check_method(
+        self,
+        method
+    ) -> None:
+        if method not in ['OLS', 'BU', 'SS', 'VS', 'MinTSa', 'MinTSh']:
+            raise ValueError(
+                "Invalid reconciliation method. "
+                "Allowed values are 'OLS','BU', 'SS', 'VS', 'MinTSa', 'MinTSh'"
+            )
 
     def compute_summing_mat(
         self
@@ -177,7 +186,7 @@ class To_Reconcile:
                         if [self.data.iloc[j][self.columns_ordered[k]]
                                 for k in range(level)] == list_of_values:
                             self.summing_mat[i][j-m] = 1
-                            
+
         return(self.summing_mat)
 
     def _get_indexes_level(
@@ -235,49 +244,92 @@ class To_Reconcile:
         i = 0
         while self.summing_mat[i].sum() != 1:
             i += 1
-            
+
         return (n-i)
 
     def _compute_lambda(
         self
     ) -> float:
+        """[Compute shrinkage parameter]
+
+        [This method computes the shrinkage parameter
+        that is necessary for reconciling with the 'MinTSh' method]
+
+        Returns
+        -------
+        float
+            [Shrinkage parameter, belongs to [0,1]]
+        """
+
         res = np.matrix(self.in_sample_error_matrix).T
+
         number_error_vectors = res.shape[0]
+
         covm = utils.cross_product(res)/number_error_vectors
+
         corm = cov2corr(covm)
+
         xs = utils.scale(res, np.sqrt(np.diag(covm)))
+
         v = (1/(number_error_vectors * (number_error_vectors - 1))) * (
             utils.cross_product(np.square(
                 np.matrix(xs))) - 1/number_error_vectors * (
                 np.square(utils.cross_product(np.matrix(xs)))))
+
         np.fill_diagonal(v, 0)
+
         corapn = cov2corr(np.diag(np.diag(covm)))
+
         d = np.square((corm - corapn))
+
         lambd = v.sum()/d.sum()
         lambd = max(min(lambd, 1), 0)
         self.lambd = lambd
+
         return(lambd)
 
     def reconcile(
         self,
         method: Optional[str] = 'MintSa',
-        column_to_reconcile: Optional[int] = -1,
+        column_to_reconcile: Optional[int] = 0,
         reconcile_all: Optional[bool] = False,
-        _vector_to_proba_reconcile: Optional[np.ndarray] = None,
-        show_lambda: Optional[bool] = False
+        show_lambda: Optional[bool] = False,
+        _vector_to_proba_reconcile: Optional[np.ndarray] = None
     ) -> np.ndarray:
-        """[summary]
+        """[Method for reconciling a vector or matrix of predictions]
 
-        [extended_summary]
+        [This method implements the state-of-the-art reconciliation methods
+
+        Choose first a reconciliation method. For benchmark and testing
+        the paramters try 'BU', the bottom-up approach. For more sophisticated
+        method try 'MinTSh' (default) or 'MinTSa'
+
+        For reconciling a specific column of predictions :
+        use column_to_reconcile, Default value = 0 (First column)
+
+        If you want to reconcile all base forecasts, use reconcile_all =True
+
+        With MintSh method, do show_lambda = True to display shrinkage value
+
+        Ignore _vector_to_proba_reconcile (probabilistic reconciliation)]
 
         Parameters
         ----------
         method : Optional[str], optional
-            [description], by default 'MintSa'
+            [Method chosen for reconciliation. Default 'MintSh'
+            is state_of_the_art. 'BU' for benchmark], by default 'MintSh'
         column_to_reconcile : Optional[int], optional
-            [description], by default -1
+            [Index of the column you want to reconcile from base_forecast.
+             Ignore if only one column in base_forecasts], by default 0
         reconcile_all : Optional[bool], optional
-            [description], by default False
+            [Wether you want to reconcile all the base forecasts or not],
+             by default False
+        _vector_to_proba_reconcile : Optional[np.ndarray], optional
+            [Ignore it. Used internally for computing prediction intervals.
+            (See method proba_reconcile())], by default None
+        show_lambda : Optional[bool], optional
+            [Wether to display the shrinkage estimator.
+             Only for 'MintSh' method], by default False
 
         Returns
         -------
@@ -287,15 +339,18 @@ class To_Reconcile:
         Raises
         ------
         ValueError
-            [description]
+            [Error raised if parameters are not correct or mutually exclusive]
         """
-        self._check_compatibility()
-        self._check_parameters()
-        self.inputs_are_checked = True
+
+        if not self.inputs_are_checked:
+            self._check_compatibility()
+            self._check_parameters()
+            self._check_method(method=method)
+            self.inputs_are_checked = True
 
         if self.summing_mat is None:
             self.summing_mat = self.compute_summing_mat()
-
+        
         if method == 'OLS':
             combination_matrix = np.linalg.inv(np.transpose(
                 self.summing_mat)@self.summing_mat)@(
@@ -303,8 +358,8 @@ class To_Reconcile:
 
         elif method == 'BU':
             combination_matrix = np.concatenate(
-                (np.zeros(shape=(self._get_number_bottom_series(
-                ), self.summing_mat.shape[0]-self._get_number_bottom_series())),
+                (np.zeros(shape=(self._get_number_bottom_series(),
+                                 self.summing_mat.shape[0]-self._get_number_bottom_series())),
                     np.identity(self._get_number_bottom_series())), axis=1)
 
         elif method == 'SS':
@@ -337,8 +392,12 @@ class To_Reconcile:
                     lambd = self._compute_lambda()
                     if show_lambda:
                         print(
-                            "lambda parameter for MinTSh reconciliation method"
-                            " is equal to : ", lambd)
+                            "Shrinkage parameter of MinTSh reconciliation"
+                            f" is equal to : {lambd}.")
+                    if lambd < 0.1:
+                        print(
+                            "Shrinkage is close to 0, try 'MintSa' method"
+                        )
                 else:
                     lambd = self.lambd
 
@@ -348,29 +407,24 @@ class To_Reconcile:
                 (self.summing_mat.T)@np.linalg.inv(W)@self.summing_mat)@(
                     self.summing_mat.T)@np.linalg.inv(W)
 
-        else:
-            raise ValueError(
-                "Invalid method. "
-                "Allowed values are 'OLS','BU', SS', 'VS', 'MinTSa', 'MinTSh'"
-            )
-
         if _vector_to_proba_reconcile is not None:
             return(
-                self.summing_mat@combination_matrix@_vector_to_proba_reconcile)
+                self.summing_mat@combination_matrix@_vector_to_proba_reconcile
+            )
 
-        elif reconcile_all:
-            return(
-                [self.summing_mat@combination_matrix@self.base_forecasts[:, i]
-                 for i in len(self.base_forecasts)])
+        if self.base_forecasts.ndim == 1:
+            reconcile_all = True
 
-        elif column_to_reconcile == -1:
+        if reconcile_all:
             return(
-                self.summing_mat@combination_matrix@self.base_forecasts)
+                self.summing_mat@combination_matrix@self.base_forecasts
+            )
 
         else:
             return(
                 self.summing_mat@combination_matrix@(
-                    self.base_forecasts[:, column_to_reconcile]))
+                    self.base_forecasts[:, column_to_reconcile])
+            )
 
     def score(
         self,
@@ -379,7 +433,7 @@ class To_Reconcile:
 
     ) -> pd.DataFrame:
 
-        # check that there is only one vector in base forecasts
+        # if self.base_forecasts
 
         if metrics == 'rmse':
             score_dataframe = pd.DataFrame(data={'rmse': [mean_squared_error(
@@ -508,7 +562,7 @@ class To_Reconcile:
         if plot_real:
             plt.title(
                 f"Real (blue), predicted (red), and reconciled with"
-                f" {reconcile_method} method(green) values for the"
+                f" {reconcile_method} method(green) values for the "
                 f"{level} aggregation level")
         plt.show()
 

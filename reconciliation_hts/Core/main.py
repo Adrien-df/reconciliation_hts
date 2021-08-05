@@ -15,23 +15,23 @@ if __name__ == "__main__":
     predictions = np.load("reconciliation_hts/Data_Examples/predictions_auto_arima_m5_1000_to_1100.npy",allow_pickle=True)
     reals = np.load("reconciliation_hts/Data_Examples/real_value_m5_1000_to_1100.npy",allow_pickle=True)
   
-
+    print(predictions.shape)
    
     object = To_Reconcile(data = data_m5, base_forecasts= predictions, columns_ordered=['state_id','store_id', 'cat_id', 'dept_id'], in_sample_error_matrix =error_matrix, real_values=reals)
     
-    #object.reconcile(method='MinTSh')
+    #print(object.reconcile(method='MinTSh',reconcile_all=True))
 
 
     #print(object.cross_val_score(metrics='rmse',reconcile_method='MinTSh',test_all=True))
 
 
-    #object.plot(level='total',reconcile_method='MinTSh')
+    object.plot(level='total',reconcile_method='MinTSh')
 
 
     #for val in range(40) :
 
 
-    print(object.proba_reconcile(column_to_reconcile=1))
+    #print(object.proba_reconcile(column_to_reconcile=1))
 
     #print(data_m5['prediction'])
     
