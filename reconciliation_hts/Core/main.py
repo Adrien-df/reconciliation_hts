@@ -5,7 +5,6 @@ import matplotlib.pyplot as plt
 
 
 if __name__ == "__main__":
-   
 
     data_m5 = pd.read_pickle("reconciliation_hts/Data_Examples/M5_preprocessed.pkl")
     error_matrix = np.load("reconciliation_hts/Data_Examples/error_matrix_500_to_600.npy",allow_pickle=True)
@@ -18,7 +17,7 @@ if __name__ == "__main__":
   
 
    
-    object = To_Reconcile(data = data_m5, base_forecasts= predictions, columns_labels_ordered=['state_id','store_id', 'cat_id', 'dept_id'], in_sample_error_matrix =error_matrix, real_values=reals)
+    object = To_Reconcile(data = data_m5, base_forecasts= predictions, columns_ordered=['state_id','store_id', 'cat_id', 'dept_id'], in_sample_error_matrix =error_matrix, real_values=reals)
     
     #object.reconcile(method='MinTSh')
 
