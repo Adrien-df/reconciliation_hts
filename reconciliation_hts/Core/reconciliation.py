@@ -4,12 +4,68 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 import random
-import utils
+from .utils import cross_product, scale
 import matplotlib.pyplot as plt
 from statsmodels.stats.moment_helpers import cov2corr
+import warnings
 
 
 class To_Reconcile:
+    """[Class for instantiating the whole problem]
+
+        [This class implements reconciliation methods for hierarchical TS
+         including state-of-the-art methods such as MinTShrinkage
+         (Wickramasuriya and al. 2021). Assess wether reconcilation improves
+         the performances of your models. Reconciliation aims at improving the
+          forecasts accross all levels of a set of hierarchical time series.
+          Important : reconciliation supposes that beforehand, forecasts were
+          computed. Reconciliation comes a posteriori of foreacsting.]
+
+        Parameters
+        ----------
+        base_forecasts : np.ndarray
+            [Numpy array with the base (original) models computed by own models
+             Shape=(n,p) with n = number of series accross the whole hierarchy
+             and p the number of forecasts (size of test set). n>=3;p>=1
+             The first row must be the 'total' time series at the top of
+             the hierarchical structure]
+
+        error_matrix : np.ndarray
+            [The matrix of the residuals (forecast-real value) of your
+            models that were evaluated on the train set or a calibration set.
+             Shape (n,k). Same n with the same order (i-th row is the i-th
+             time series from base_forecasts)]
+
+        data : Optional[pd.DataFrame], optional
+            [Pandas dataframe from which the structure will be
+             computed. See example for understanding expected format],
+              by default None
+
+        columns_ordered : Optional[list[str]], optional
+            [Provided with data parameter. List of string
+            with name of columns from data parameter and ordered such
+            as the first element represent top hierarchical level ],
+             by default None
+
+        summing_mat : Optional[np.ndarray], optional
+            [Summing matrix. Automatically computed if data
+            and columns_ordered provided. Otherwise, must me an
+            aggregating matrix. More details in theoretical description],
+             by default None
+
+        real_values : Optional[np.ndarray], optional
+            [Numpy array with the real values from the test set.
+             Shape=(n,p) with n = number of series accross the whole hierarchy
+             and p the number of forecasts (size of test set). n>=3;p>=1
+             The first row must be the 'total' time series at the top of
+             the hierarchical structure], by default None
+
+        lambd : [type], optional
+            [Ignore this parameter], by default None
+
+        inputs_are_checked : bool, optional
+            [Ignore thi parameter], by default False
+        """
 
     def __init__(
         self,
@@ -22,6 +78,7 @@ class To_Reconcile:
         lambd=None,
         inputs_are_checked=False
     ) -> None:
+
         self.data = data
         self.summing_mat = summing_mat
         self.error_matrix = error_matrix
@@ -188,6 +245,30 @@ class To_Reconcile:
                 "Allowed values are 'rmse','mase','mse'."
             )
 
+    def _check_real_values(self) -> None:
+        if self.real_values is None:
+            raise ValueError(
+                "For computing the scores,"
+                " you must provide the array of real values"
+                " If real values has one column, use method score"
+                " If real values has multiple columns, use cross_score method"
+            )
+
+    def _check_level(
+        self,
+        level
+    ) -> None:
+        if self.columns_ordered is None:
+            raise ValueError(
+                "You must provide columns_ordered parameter when"
+                " you instantiate the class"
+            )
+        if level not in (self.columns_ordered + ['total']):
+            raise ValueError(
+                "The level parmameter must be 'total' or one element of"
+                " columns_ordered"
+            )
+
     def compute_summing_mat(
         self
     ) -> np.ndarray:
@@ -303,16 +384,16 @@ class To_Reconcile:
 
         number_error_vectors = res.shape[0]
 
-        covm = utils.cross_product(res)/number_error_vectors
+        covm = cross_product(res)/number_error_vectors
 
         corm = cov2corr(covm)
 
-        xs = utils.scale(res, np.sqrt(np.diag(covm)))
+        xs = scale(res, np.sqrt(np.diag(covm)))
 
         v = (1/(number_error_vectors * (number_error_vectors - 1))) * (
-            utils.cross_product(np.square(
+            cross_product(np.square(
                 np.matrix(xs))) - 1/number_error_vectors * (
-                np.square(utils.cross_product(np.matrix(xs)))))
+                np.square(cross_product(np.matrix(xs)))))
 
         np.fill_diagonal(v, 0)
 
@@ -497,6 +578,7 @@ class To_Reconcile:
         """
 
         self._check_metrics(metrics=metrics)
+        self._check_real_values()
 
         if self.base_forecasts.ndim > 1:
             raise ValueError(
@@ -570,13 +652,13 @@ class To_Reconcile:
         """
 
         self.check_metrics(metrics=metrics)
-        n = len(self.base_forecasts.T)
-        # assert that n> 1
+        self._check_real_values()
+
         if not test_all:
-            indexes = random.sample(range(n), cv)
-        if test_all:
-            indexes = np.arange(n)
-            self.cv = n
+            indexes = random.sample(range(self.base_forecasts.shape[1]), cv)
+        else:
+            indexes = np.arange(self.base_forecasts.shape[1])
+            self.cv = self.base_forecasts.shape[1]
 
         mean_score_real = 0
         mean_score_reconciled = 0
@@ -624,39 +706,74 @@ class To_Reconcile:
         self,
         level: Optional[str] = 'total',
         reconcile_method: Optional[str] = 'MinTSa',
-        columns: Optional[np.ndarray] = -1,
+        columns: list[int] = [-1],
         plot_real: Optional[bool] = True,
 
     ) -> None:
-        # asser that we hace the real values
-        # assert that plot in total +columns label ordered
+        """[Plotting reconciled forecasts]
+
+        [This method allows you to plot the reconciled forecasts, along with
+         the base forecasts and the real values]
+
+        Parameters
+        ----------
+        level : Optional[str], optional
+            [The hierarchical level you wish to plot], by default 'total'
+        reconcile_method : Optional[str], optional
+            [The reconciliation method chosen], by default 'MinTSa'
+        columns : list[int], optional
+            [The list of index to plot. Default = all ], by default [-1]
+        plot_real : Optional[bool], optional
+            [If True, all the reconciled forecasts are plotted],
+             by default True
+        """
+
+        self._check_real_values()
+        self._check_level(level=level)
         indexes_of_series = self._get_indexes_level()
 
         if columns == -1:
             columns = np.arange(self.real_values.shape[1])
         plt.figure(figsize=(15, 6))
         if level == 'total':
-            plt.plot(self.base_forecasts[0, columns], color='red')
-            plt.plot(np.asarray([self.reconcile(
+            plt.plot(columns, self.base_forecasts[0, columns], color='red')
+            plt.plot(columns, np.asarray([self.reconcile(
                 method=reconcile_method,
-                column_to_reconcile=i) for i in columns]).T[0], color='green')
+                column_to_reconcile=i) for i in columns]).T[0],
+                color='green')
             if plot_real:
-                plt.plot(self.real_values[0, columns], color='blue')
+                plt.plot(columns, self.real_values[0, columns],
+                         color='blue')
 
         elif level != 'total':
+            if len(indexes_of_series[level]) > 5:
+                warnings.warn(
+                    f"There are {len(indexes_of_series[level])} that are going"
+                    " to be plotted"
+                    " It is likely that the plot will be illisible"
+                )
             for index in indexes_of_series[level]:
-                plt.plot(self.base_forecasts[index, columns], color='red')
-                plt.plot(np.asarray([self.reconcile(
+                plt.plot(columns, self.base_forecasts[index,
+                         columns], color='red')
+                plt.plot(columns, np.asarray([self.reconcile(
                     method=reconcile_method, column_to_reconcile=i)
                     for i in columns]).T[index],
                     color='green')
                 if plot_real:
-                    plt.plot(self.real_values[index, columns], color='blue')
+                    plt.plot(
+                        columns,
+                        self.real_values[index, columns], color='blue')
         if plot_real:
             plt.title(
                 f"Real (blue), predicted (red), and reconciled with"
                 f" {reconcile_method} method(green) values for the "
                 f"{level} aggregation level")
+        else:
+            plt.title(
+                f"Predicted (red), and reconciled with"
+                f" {reconcile_method} method(green) values for the "
+                f"{level} aggregation level")
+
         plt.show()
 
     def proba_reconcile(

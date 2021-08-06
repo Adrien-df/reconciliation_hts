@@ -3,6 +3,7 @@
 Welcome to reconciliation_hts's documentation!
 ==============================================
 
+
 .. automodule:: Core.reconciliation
     :members:
 
@@ -12,9 +13,9 @@ Welcome to reconciliation_hts's documentation!
 
 
 
+
 Indices and tables
 ==================
 
-* :ref:`genindex`
-* :ref:`modindex`
+
 * :ref:`search`

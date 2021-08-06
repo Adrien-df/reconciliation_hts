@@ -32,14 +32,235 @@
             
   <div class="section" id="module-Core.reconciliation">
 <span id="welcome-to-reconciliation-hts-s-documentation"></span><h1>Welcome to reconciliation_hts’s documentation!<a class="headerlink" href="#module-Core.reconciliation" title="Permalink to this headline">¶</a></h1>
+<dl class="py class">
+<dt id="Core.reconciliation.To_Reconcile">
+<em class="property"><span class="pre">class</span> </em><code class="sig-prename descclassname"><span class="pre">Core.reconciliation.</span></code><code class="sig-name descname"><span class="pre">To_Reconcile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">base_forecasts</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">error_matrix</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">numpy.ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">pandas.core.frame.DataFrame</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns_ordered</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">list</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">summing_mat</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">real_values</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lambd</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">inputs_are_checked</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Core.reconciliation.To_Reconcile" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Class for instantiating the whole problem]</p>
+<dl>
+<dt>[This class implements reconciliation methods for hierarchical TS</dt><dd><p>including state-of-the-art methods such as MinTShrinkage
+(Wickramasuriya and al. 2021). Assess wether reconcilation improves
+the performances of your models. Reconciliation aims at improving the</p>
+<blockquote>
+<div><p>forecasts accross all levels of a set of hierarchical time series.
+Important : reconciliation supposes that beforehand, forecasts were
+computed. Reconciliation comes a posteriori of foreacsting.]</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>base_forecasts</strong> (<em>np.ndarray</em>) – <dl class="simple">
+<dt>[Numpy array with the base (original) models computed by own models</dt><dd><p>Shape=(n,p) with n = number of series accross the whole hierarchy
+and p the number of forecasts (size of test set). n&gt;=3;p&gt;=1
+The first row must be the ‘total’ time series at the top of
+the hierarchical structure]</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>error_matrix</strong> (<em>np.ndarray</em>) – <p>[The matrix of the residuals (forecast-real value) of your
+models that were evaluated on the train set or a calibration set.</p>
+<blockquote>
+<div><p>Shape (n,k). Same n with the same order (i-th row is the i-th
+time series from base_forecasts)]</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>data</strong> (<em>Optional</em><em>[</em><em>pd.DataFrame</em><em>]</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>[Pandas dataframe from which the structure will be</dt><dd><dl class="simple">
+<dt>computed. See example for understanding expected format],</dt><dd><p>by default None</p>
+</dd>
+</dl>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>columns_ordered</strong> (<em>Optional</em><em>[</em><em>list</em><em>[</em><em>str</em><em>]</em><em>]</em><em>, </em><em>optional</em>) – <p>[Provided with data parameter. List of string
+with name of columns from data parameter and ordered such
+as the first element represent top hierarchical level ],</p>
+<blockquote>
+<div><p>by default None</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>summing_mat</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>]</em><em>, </em><em>optional</em>) – <p>[Summing matrix. Automatically computed if data
+and columns_ordered provided. Otherwise, must me an
+aggregating matrix. More details in theoretical description],</p>
+<blockquote>
+<div><p>by default None</p>
+</div></blockquote>
+</p></li>
+<li><p><strong>real_values</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>]</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>[Numpy array with the real values from the test set.</dt><dd><p>Shape=(n,p) with n = number of series accross the whole hierarchy
+and p the number of forecasts (size of test set). n&gt;=3;p&gt;=1
+The first row must be the ‘total’ time series at the top of
+the hierarchical structure], by default None</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>lambd</strong> (<em>[</em><em>type</em><em>]</em><em>, </em><em>optional</em>) – [Ignore this parameter], by default None</p></li>
+<li><p><strong>inputs_are_checked</strong> (<em>bool</em><em>, </em><em>optional</em>) – [Ignore thi parameter], by default False</p></li>
+</ul>
+</dd>
+</dl>
+<dl class="py method">
+<dt id="Core.reconciliation.To_Reconcile.compute_summing_mat">
+<code class="sig-name descname"><span class="pre">compute_summing_mat</span></code><span class="sig-paren">(</span><span class="sig-paren">)</span> &#x2192; <span class="pre">numpy.ndarray</span><a class="headerlink" href="#Core.reconciliation.To_Reconcile.compute_summing_mat" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Computes the summing_matrix]</p>
+<p>[When data and columns_label_ordered is passed in input,
+this method will automatically compute the summing matrix]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Returns</dt>
+<dd class="field-odd"><p>[The summing matrix used for reconciliation afterwards]</p>
+</dd>
+<dt class="field-even">Return type</dt>
+<dd class="field-even"><p>np.ndarray</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Core.reconciliation.To_Reconcile.cross_score">
+<code class="sig-name descname"><span class="pre">cross_score</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">reconcile_method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MinTSa'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'rmse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">test_all</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cv</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">pandas.core.frame.DataFrame</span><a class="headerlink" href="#Core.reconciliation.To_Reconcile.cross_score" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Asses if reconciliation improves the forecasts]</p>
+<dl>
+<dt>[This method compares the performance of reconciled forecasts</dt><dd><dl>
+<dt>(in regards to the real values) with the performance of the original</dt><dd><p>base forecasts. You can decide to compare the performance on all
+the test set or only on a random sample of the test set with</p>
+<blockquote>
+<div><p>test_all = False and by setting a value for cv ]</p>
+</div></blockquote>
+</dd>
+</dl>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>reconcile_method</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [method chosen for reconciliation], by default ‘MinTSa’</p></li>
+<li><p><strong>metrics</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [metrics for evaluating distance to real values], by default ‘rmse’</p></li>
+<li><p><strong>test_all</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – [Wether you ant to test all base forecasts], by default False</p></li>
+<li><p><strong>cv</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – [If test_all = False, size of sample to test], by default 5</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>[Pandas DataFrame with the two scores displayed]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Core.reconciliation.To_Reconcile.plot">
+<code class="sig-name descname"><span class="pre">plot</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">level</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'total'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconcile_method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MinTSa'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">list</span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">[-</span> <span class="pre">1]</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">plot_real</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">None</span><a class="headerlink" href="#Core.reconciliation.To_Reconcile.plot" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Plotting reconciled forecasts]</p>
+<dl class="simple">
+<dt>[This method allows you to plot the reconciled forecasts, along with</dt><dd><p>the base forecasts and the real values]</p>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>level</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [The hierarchical level you wish to plot], by default ‘total’</p></li>
+<li><p><strong>reconcile_method</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [The reconciliation method chosen], by default ‘MinTSa’</p></li>
+<li><p><strong>columns</strong> (<em>list</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – [The list of index to plot. Default = all ], by default [-1]</p></li>
+<li><p><strong>plot_real</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>[If True, all the reconciled forecasts are plotted],</dt><dd><p>by default True</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Core.reconciliation.To_Reconcile.reconcile">
+<code class="sig-name descname"><span class="pre">reconcile</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MintSa'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">column_to_reconcile</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">int</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconcile_all</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">show_lambda</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">bool</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">False</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">_vector_to_proba_reconcile</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">numpy.ndarray</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">numpy.ndarray</span><a class="headerlink" href="#Core.reconciliation.To_Reconcile.reconcile" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Method for reconciling a vector or matrix of predictions]</p>
+<p>[This method implements the state-of-the-art reconciliation methods</p>
+<p>Choose first a reconciliation method. For benchmark and testing
+the paramters try ‘BU’, the bottom-up approach. For more sophisticated
+method try ‘MinTSh’ (default) or ‘MinTSa’</p>
+<p>For reconciling a specific column of predictions :
+use column_to_reconcile, Default value = 0 (First column)</p>
+<p>If you want to reconcile all base forecasts, use reconcile_all =True</p>
+<p>With MintSh method, do show_lambda = True to display shrinkage value</p>
+<p>Ignore _vector_to_proba_reconcile (probabilistic reconciliation)]</p>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>method</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [Method chosen for reconciliation. Default ‘MintSh’
+is state_of_the_art. ‘BU’ for benchmark], by default ‘MintSh’</p></li>
+<li><p><strong>column_to_reconcile</strong> (<em>Optional</em><em>[</em><em>int</em><em>]</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>[Index of the column you want to reconcile from base_forecast.</dt><dd><p>Ignore if only one column in base_forecasts], by default 0</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>reconcile_all</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>[Wether you want to reconcile all the base forecasts or not],</dt><dd><p>by default False</p>
+</dd>
+</dl>
+</p></li>
+<li><p><strong>_vector_to_proba_reconcile</strong> (<em>Optional</em><em>[</em><em>np.ndarray</em><em>]</em><em>, </em><em>optional</em>) – [Ignore it. Used internally for computing prediction intervals.
+(See method proba_reconcile())], by default None</p></li>
+<li><p><strong>show_lambda</strong> (<em>Optional</em><em>[</em><em>bool</em><em>]</em><em>, </em><em>optional</em>) – <dl class="simple">
+<dt>[Wether to display the shrinkage estimator.</dt><dd><p>Only for ‘MintSh’ method], by default False</p>
+</dd>
+</dl>
+</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>[description]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>np.ndarray</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – [Error raised if parameters are not correct or mutually exclusive]</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt id="Core.reconciliation.To_Reconcile.score">
+<code class="sig-name descname"><span class="pre">score</span></code><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'rmse'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">reconcile_method</span></span><span class="p"><span class="pre">:</span></span> <span class="n"><span class="pre">Optional</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">]</span></span></span> <span class="o"><span class="pre">=</span></span> <span class="default_value"><span class="pre">'MinTSa'</span></span></em><span class="sig-paren">)</span> &#x2192; <span class="pre">pandas.core.frame.DataFrame</span><a class="headerlink" href="#Core.reconciliation.To_Reconcile.score" title="Permalink to this definition">¶</a></dt>
+<dd><p>[Assess if reconciliation improves forecast]</p>
+<dl>
+<dt>[This method enables you to compute the score of ONE reconciled</dt><dd><p>forecast versus the original forecast. You choose your metrics
+and the reconciliation method. For computing the score on</p>
+<blockquote>
+<div><p>multiple reconciliations, see cross_score() method]</p>
+</div></blockquote>
+</dd>
+</dl>
+<dl class="field-list simple">
+<dt class="field-odd">Parameters</dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>metrics</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [metrics for evaluating distance to real values], by default ‘rmse’</p></li>
+<li><p><strong>reconcile_method</strong> (<em>Optional</em><em>[</em><em>str</em><em>]</em><em>, </em><em>optional</em>) – [method chosen for reconciliation], by default ‘MinTSa’</p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns</dt>
+<dd class="field-even"><p>[Pandas DataFrame with the two scores displayed]</p>
+</dd>
+<dt class="field-odd">Return type</dt>
+<dd class="field-odd"><p>pd.DataFrame</p>
+</dd>
+<dt class="field-even">Raises</dt>
+<dd class="field-even"><p><strong>ValueError</strong> – [If base forecast parmameter has more than one vector of forecasts]</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
 <div class="toctree-wrapper compound">
 </div>
 </div>
 <div class="section" id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
 <ul class="simple">
-<li><p><a class="reference internal" href="genindex.html"><span class="std std-ref">Index</span></a></p></li>
-<li><p><a class="reference internal" href="py-modindex.html"><span class="std std-ref">Module Index</span></a></p></li>
 <li><p><a class="reference internal" href="search.html"><span class="std std-ref">Search Page</span></a></p></li>
 </ul>
 </div>
