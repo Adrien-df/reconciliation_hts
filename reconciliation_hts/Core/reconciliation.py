@@ -4,10 +4,10 @@ import pandas as pd
 from sklearn.metrics import mean_squared_error
 from sklearn.metrics import mean_absolute_error
 import random
-from .utils import cross_product, scale
-import matplotlib.pyplot as plt
+from utils import cross_product, scale
 from statsmodels.stats.moment_helpers import cov2corr
 import warnings
+import matplotlib.pyplot as plt
 
 
 class To_Reconcile:
@@ -30,11 +30,13 @@ class To_Reconcile:
              The first row must be the 'total' time series at the top of
              the hierarchical structure]
 
-        error_matrix : np.ndarray
+        error_matrix : Optional[np.ndarray]
             [The matrix of the residuals (forecast-real value) of your
             models that were evaluated on the train set or a calibration set.
              Shape (n,k). Same n with the same order (i-th row is the i-th
-             time series from base_forecasts)]
+             time series from base_forecasts). 
+             Necessary for 'VS', 'MinTSa' and 'MinTSh' reconciliation methods],
+             by default None
 
         data : Optional[pd.DataFrame], optional
             [Pandas dataframe from which the structure will be
@@ -70,7 +72,7 @@ class To_Reconcile:
     def __init__(
         self,
         base_forecasts: np.ndarray,
-        error_matrix: np.ndarray,
+        error_matrix: Optional[np.ndarray] = None,
         data: Optional[pd.DataFrame] = None,
         columns_ordered: Optional[list[str]] = None,
         summing_mat: Optional[np.ndarray] = None,
@@ -234,6 +236,13 @@ class To_Reconcile:
                 "Invalid reconciliation method. "
                 "Allowed values are 'OLS','BU', 'SS', 'VS', 'MinTSa', 'MinTSh'"
             )
+        if method in ['VS', 'MinTSa', 'MinTSh']:
+            if self.error_matrix is None:
+                raise ValueError(
+                    "No error_matrix was instantiated in the class."
+                    f" For {method} reconciliation method,"
+                    " error_matrix is compulsory"
+                )
 
     def _check_metrics(
         self,
@@ -409,7 +418,7 @@ class To_Reconcile:
 
     def reconcile(
         self,
-        method: Optional[str] = 'MintSa',
+        method: Optional[str] = 'MintSh',
         column_to_reconcile: Optional[int] = 0,
         reconcile_all: Optional[bool] = False,
         show_lambda: Optional[bool] = False,
@@ -453,7 +462,7 @@ class To_Reconcile:
         Returns
         -------
         np.ndarray
-            [description]
+            [The reconciled numpy array]
 
         Raises
         ------
@@ -549,7 +558,7 @@ class To_Reconcile:
     def score(
         self,
         metrics: Optional[str] = 'rmse',
-        reconcile_method: Optional[str] = 'MinTSa',
+        reconcile_method: Optional[str] = 'MinTSh',
 
     ) -> pd.DataFrame:
         """[Assess if reconciliation improves forecast]
@@ -564,7 +573,7 @@ class To_Reconcile:
         metrics : Optional[str], optional
             [metrics for evaluating distance to real values], by default 'rmse'
         reconcile_method : Optional[str], optional
-            [method chosen for reconciliation], by default 'MinTSa'
+            [method chosen for reconciliation], by default 'MinTSh'
 
         Returns
         -------
@@ -617,7 +626,7 @@ class To_Reconcile:
 
     def cross_score(
         self,
-        reconcile_method: Optional[str] = 'MinTSa',
+        reconcile_method: Optional[str] = 'MinTSh',
         metrics: Optional[str] = 'rmse',
         test_all: Optional[bool] = True,
         cv: Optional[int] = 5,
@@ -634,7 +643,7 @@ class To_Reconcile:
         Parameters
         ----------
         reconcile_method : Optional[str], optional
-            [method chosen for reconciliation], by default 'MinTSa'
+            [method chosen for reconciliation], by default 'MinTSh'
         metrics : Optional[str], optional
             [metrics for evaluating distance to real values], by default 'rmse'
         test_all : Optional[bool], optional
@@ -651,7 +660,7 @@ class To_Reconcile:
 
         """
 
-        self.check_metrics(metrics=metrics)
+        self._check_metrics(metrics=metrics)
         self._check_real_values()
 
         if not test_all:
@@ -732,7 +741,7 @@ class To_Reconcile:
         self._check_level(level=level)
         indexes_of_series = self._get_indexes_level()
 
-        if columns == -1:
+        if columns == [-1]:
             columns = np.arange(self.real_values.shape[1])
         plt.figure(figsize=(15, 6))
         if level == 'total':

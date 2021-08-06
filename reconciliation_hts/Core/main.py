@@ -12,10 +12,8 @@ if __name__ == "__main__":
         "reconciliation_hts/Data_Examples/error_matrix_500_to_600.npy",
         allow_pickle=True)
 
-    # predictions = np.load("Data_Examples/
-    # predictions_auto_arima_m5_500_to_600.npy",allow_pickle=True)
-    # reals = np.load("Data_Examples/real_value_m5_600_to_500.npy",
-    # allow_pickle=True)
+    #predictions = np.load("Data_Examples/predictions_auto_arima_m5_500_to_600.npy",allow_pickle=True)
+    #reals = np.load("Data_Examples/real_value_m5_600_to_500.npy",allow_pickle=True)
 
     predictions = np.load(
         "reconciliation_hts/Data_Examples/predictions_auto_arima_m5_1000_to_1100.npy",
@@ -29,15 +27,12 @@ if __name__ == "__main__":
                               'state_id', 'store_id', 'cat_id', 'dept_id'],
                           error_matrix=error_matrix, real_values=reals)
 
-    # print(object.reconcile(method='MinTSh',reconcile_all=True))
+    #print(object.reconcile(method='MinTSh', reconcile_all=True))
     # object.score()
 
-    # print(object.cross_score(metrics='rmse',reconcile_method='MinTSh',test_all=True))
+    #print(object.cross_score(metrics='rmse',reconcile_method='MinTSh',test_all=True))
 
-    object.plot(level='total', reconcile_method='MinTSh', plot_real=False,
-                columns=[
-                    0, 1, 2, 3, 4, 5, 20, 21, 22, 23, 24, 28, 29, 48, 58, 68])
-
+    object.plot(level='state_id', reconcile_method='MinTSh', plot_real=True)
     # print(object.proba_reconcile(column_to_reconcile=1))
 
     print('\n')
